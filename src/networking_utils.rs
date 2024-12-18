@@ -2,9 +2,13 @@ use crate::networking_types::{NetworkingAvailabilityResult, NetworkingMessage};
 use crate::{register_callback, Callback, Inner};
 use std::convert::TryInto;
 use std::ffi::{c_void, CStr};
+use std::os::raw::c_char;
 use std::sync::Arc;
 
-use steamworks_sys as sys;
+use steamworks_sys::{
+    self as sys, ESteamNetworkingSocketsDebugOutputType,
+    SteamAPI_ISteamNetworkingUtils_SetDebugOutputFunction,
+};
 
 /// Access to the steam networking sockets interface
 pub struct NetworkingUtils<Manager> {
@@ -38,6 +42,24 @@ impl<Manager> NetworkingUtils<Manager> {
                 message,
                 _inner: self.inner.clone(),
             }
+        }
+    }
+
+    pub fn enable_debug_output(
+        &self,
+        ty: ESteamNetworkingSocketsDebugOutputType,
+        f: fn(ty: ESteamNetworkingSocketsDebugOutputType, msg: String),
+    ) {
+        static mut F: Option<fn(ty: ESteamNetworkingSocketsDebugOutputType, msg: String)> = None;
+        unsafe {
+            F = Some(f);
+            unsafe extern "C" fn debug(
+                ty: ESteamNetworkingSocketsDebugOutputType,
+                msg: *const c_char,
+            ) {
+                F.unwrap()(ty, CStr::from_ptr(msg).to_string_lossy().to_string());
+            }
+            SteamAPI_ISteamNetworkingUtils_SetDebugOutputFunction(self.utils, ty, Some(debug));
         }
     }
 
