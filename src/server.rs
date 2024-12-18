@@ -75,6 +75,28 @@ impl Server {
         };
     }
 
+    pub fn networking_utils(&self) -> networking_utils::NetworkingUtils<ServerManager> {
+        unsafe {
+            let utils = sys::SteamAPI_SteamNetworkingUtils_SteamAPI_v004();
+            debug_assert!(!utils.is_null());
+            networking_utils::NetworkingUtils {
+                utils,
+                inner: self.inner.clone(),
+            }
+        }
+    }
+
+    pub fn networking_sockets(&self) -> networking_sockets::NetworkingSockets<ServerManager> {
+        unsafe {
+            let sockets = sys::SteamAPI_SteamGameServerNetworkingSockets_SteamAPI_v012();
+            debug_assert!(!sockets.is_null());
+            networking_sockets::NetworkingSockets {
+                sockets,
+                inner: self.inner.clone(),
+            }
+        }
+    }
+
     /// Attempts to initialize the steamworks api and returns
     /// a server to access the rest of the api.
     ///
